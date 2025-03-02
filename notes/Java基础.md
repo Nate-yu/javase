@@ -216,3 +216,209 @@ xixi
 haha
 ```
 
+# 基本数据类型
+## Java 中的几种基本数据类型
+8种基本数据类型：
+
++ 6种数字类型：
+    - 4种整数型：`byte`、`short`、`int`、`long`
+    - 2种浮点型：`float`、`double`
++ 1种字符类型：`char`
++ 1种布尔型：`boolean`
+
+8 种基本数据类型的默认值以及所占空间的大小如下：
+
+![](https://cdn.nlark.com/yuque/0/2025/png/25941432/1740921975708-e5c5a56c-9106-47f4-9327-c4e3836eb230.png)
+
+可以看到，像 `byte`、`short`、`int`、`long`能表示的最大正数都减 1 了。这是为什么呢？
+
+这是因为在二进制补码表示法中，最高位是用来表示符号的（0 表示正数，1 表示负数），其余位表示数值部分。所以，如果我们要表示最大的正数，我们需要把除了最高位之外的所有位都设为 1。如果我们再加 1，就会导致溢出，变成一个负数。
+
+对于 `boolean`，官方文档未明确定义，它依赖于 JVM 厂商的具体实现。逻辑上理解是占用 1 位，但是实际中会考虑计算机高效存储因素。
+
+另外，Java 的每种基本类型所占存储空间的大小不会像其他大多数语言那样随机器硬件架构的变化而变化。这种所占存储空间大小的不变性是 Java 程序比用其他大多数语言编写的程序更具可移植性的原因之一。
+
+**注意：**
+
+1. Java 里使用 `long` 类型的数据一定要在数值后面加上 **L**，否则将作为整型解析。
+2. Java 里使用 `float` 类型的数据一定要在数值后面加上 **f 或 F**，否则将无法通过编译。
+3. `char a = 'h'`char :单引号，`String a = "hello"` :双引号。
+
+这八种基本类型都有对应的包装类分别为：`Byte`、`Short`、`Integer`、`Long`、`Float`、`Double`、`Character`、`Boolean` 。
+
+## 基本类型和包装类型的区别？
+1. 用途：基本类型一般用于定义常量和局部变量。包装类型定义方法参数、对象属性等，且包装类型可以用于泛型，而基本类型不可以
+2. 存储方式：基本数据类型的局部变量存放在JVM栈中的局部变量表中，基本数据类型的成员变量（未被`static`修饰）存放在JVM堆中。包装类型属于对象类型，所有对象实例都存在于堆中。
+3. 占用空间：基本数据类型占用空间非常小
+4. 默认值：包装类型默认值均为`null`，基本类型有默认值
+5. 比较方式：对于基本类型来说，`==`比较的是值，对于包装类型来说，`==`比较的是对象的内存地址。所有整型包装类对象值之间的比较，全部使用`equals()`方法。
+
+**为什么说是几乎所有对象实例都存在于堆中呢？** 
+
+这是因为 HotSpot 虚拟机引入了 JIT 优化之后，会对对象进行逃逸分析，如果发现某一个对象并没有逃逸到方法外部，那么就可能通过标量替换来实现栈上分配，而避免堆上分配内存
+
+ ⚠️ 注意：**基本数据类型存放在栈中是一个常见的误区！** 基本数据类型的存储位置取决于它们的作用域和声明方式。如果它们是局部变量，那么它们会存放在栈中；如果它们是成员变量，那么它们会存放在堆/方法区/元空间中。
+
+```java
+public class Test {
+    // 成员变量，存放在堆中
+    int a = 10;
+    // 被 static 修饰的成员变量，JDK 1.7 及之前位于方法区，1.8 后存放于元空间，均不存放于堆中。
+    // 变量属于类，不属于对象。
+    static int b = 20;
+
+    public void method() {
+        // 局部变量，存放在栈中
+        int c = 30;
+        static int d = 40; // 编译错误，不能在方法中使用 static 修饰局部变量
+    }
+}
+```
+
+## 包装类型的缓存机制了解么？
+Java 基本数据类型的包装类型的大部分都用到了缓存机制来提升性能。
+
+`Byte`,`Short`,`Integer`,`Long` 这 4 种包装类默认创建了数值 **[-128，127]** 的相应类型的缓存数据，`Character` 创建了数值在 **[0,127]** 范围的缓存数据，`Boolean` 直接返回 `True` or `False`。
+
+`Integer`缓存源码：
+
+```java
+public static Integer valueOf(int i) {
+    if (i >= IntegerCache.low && i <= IntegerCache.high)
+        return IntegerCache.cache[i + (-IntegerCache.low)];
+    return new Integer(i);
+}
+private static class IntegerCache {
+    static final int low = -128;
+    static final int high;
+    static {
+        // high value may be configured by property
+        int h = 127;
+    }
+}
+```
+
+`Character`缓存源码：
+
+```java
+public static Character valueOf(char c) {
+    if (c <= 127) { // must cache
+      return CharacterCache.cache[(int)c];
+    }
+    return new Character(c);
+}
+
+private static class CharacterCache {
+    private CharacterCache(){}
+    static final Character cache[] = new Character[127 + 1];
+    static {
+        for (int i = 0; i < cache.length; i++)
+            cache[i] = new Character((char)i);
+    }
+
+}
+```
+
+`Boolean`缓存源码：
+
+```java
+public static Boolean valueOf(boolean b) {
+    return (b ? TRUE : FALSE);
+}
+```
+
+如果超出对应范围仍然会去创建新的对象，缓存的范围区间的大小只是在性能和资源之间的权衡。
+
+两种浮点数类型的包装类 `Float`,`Double` 并没有实现缓存机制。
+
+```java
+Integer i1 = 33;
+Integer i2 = 33;
+System.out.println(i1 == i2);// 输出 true
+
+Float i11 = 333f;
+Float i22 = 333f;
+System.out.println(i11 == i22);// 输出 false
+
+Double i3 = 1.2;
+Double i4 = 1.2;
+System.out.println(i3 == i4);// 输出 false
+```
+
+## 自动装箱与拆箱了解吗？原理是什么？
+什么是自动拆装箱？
+
++ 装箱：将基本类型用它们对应的引用类型包装起来；
++ 拆箱：将包装类型转换为基本数据类型；
+
+```java
+Integer i = 10;  //装箱
+int n = i;   //拆箱
+```
+
+`Integer i = 10;` 等价于 `Integer i = Integer.valueOf(10);`
+
+`int n = i;` 等价于`int n = i.intValue();`
+
+注意：如果频繁拆装箱的话，也会严重影响系统的性能。我们应该尽量避免不必要的拆装箱操作。
+
+## 为什么浮点数运算的时候会有精度丢失的风险？
+```java
+float a = 2.0f - 1.9f;
+float b = 1.8f - 1.7f;
+System.out.printf("%.9f",a);// 0.100000024
+System.out.println(b);// 0.099999905
+System.out.println(a == b);// false
+```
+
+为什么会出现这个问题呢？
+
+这个和计算机保存浮点数的机制有很大关系。我们知道计算机是二进制的，而且计算机在表示一个数字时，宽度是有限的，**无限循环的小数存储在计算机时，只能被截断，所以就会导致小数精度发生损失的情况**。这也就是解释了为什么浮点数没有办法用二进制精确表示。
+
+就比如说十进制下的 0.2 就没办法精确转换成二进制小数：
+
+```java
+// 0.2 转换为二进制数的过程为，不断乘以 2，直到不存在小数为止，
+// 在这个计算过程中，得到的整数部分从上到下排列就是二进制的结果。
+0.2 * 2 = 0.4 -> 0
+0.4 * 2 = 0.8 -> 0
+0.8 * 2 = 1.6 -> 1
+0.6 * 2 = 1.2 -> 1
+0.2 * 2 = 0.4 -> 0（发生循环）
+...
+```
+
+## 如何解决浮点数运算的精度丢失问题？
+`BigDecimal` 可以实现对浮点数的运算，不会造成精度丢失。通常情况下，大部分需要浮点数精确运算结果的业务场景（比如涉及到钱的场景）都是通过 `BigDecimal` 来做的。
+
+```java
+BigDecimal a = new BigDecimal("1.0");
+BigDecimal b = new BigDecimal("1.00");
+BigDecimal c = new BigDecimal("0.8");
+
+BigDecimal x = a.subtract(c);
+BigDecimal y = b.subtract(c);
+
+System.out.println(x); /* 0.2 */
+System.out.println(y); /* 0.20 */
+// 比较内容，不是比较值
+System.out.println(Objects.equals(x, y)); /* false */
+// 比较值相等用相等compareTo，相等返回0
+System.out.println(0 == x.compareTo(y)); /* true */
+```
+
+## 超过 long 整型的数据应该如何表示？
+基本数值类型都有一个表达范围，如果超过这个范围就会有数值溢出的风险。
+
+在 Java 中，64 位 long 整型是最大的整数类型。
+
+```java
+long l = Long.MAX_VALUE;
+System.out.println(l + 1); // -9223372036854775808
+System.out.println(l + 1 == Long.MIN_VALUE); // true
+```
+
+`BigInteger` 内部使用 `int[]` 数组来存储任意大小的整形数据。
+
+相对于常规整数类型的运算来说，`BigInteger` 运算的效率会相对较低。
+
