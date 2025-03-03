@@ -422,3 +422,96 @@ System.out.println(l + 1 == Long.MIN_VALUE); // true
 
 相对于常规整数类型的运算来说，`BigInteger` 运算的效率会相对较低。
 
+# 变量
+## 成员变量与局部变量的区别
++ 语法形式：成员变量属于类，局部变量是在代码块或方法中定义的变量或者是方法的参数；成员变量可以被`public`、`private`、`static`等修饰符所修饰，而局部变量不能被修饰；局部变量与成员变量均可被`final`所修饰
++ 存储方式：若成员变量被`static`修饰，则属于类，否则属于实例，存在于堆内存，局部变量存在于栈内存中
++ 生存时间：成员变量随着对象的创建而存在，局部变量随着方法的调用自动生成，调用结束消亡
++ 默认值：没有被赋初始值的成员变量自动以类型的默认值而赋值（被`final`修饰的成员变量必须显示地被赋值），局部变量不会自动赋值
+
+**为什么成员变量有默认值？**
+
+1. 没有默认值就会导致变量是任意随机值，程序读取该值运行会出现意外
+2. 成员变量在运行时可以借助反射等方式手动赋值，局部变量不行
+3. 局部变量没赋值可以直接报错，而成员变量可能是运行时赋值，无法判断
+
+成员变量与局部变量代码示例：
+
+```java
+package variable;
+
+public class VariableExample {
+    // 成员变量
+    private String name;
+    private int age;
+
+    // 方法中的局部变量
+    public void method() {
+        int num = 10; // 栈中分配的局部变量
+        String str = "Hello!"; // 栈中分配的局部变量
+        System.out.println(num);
+        System.out.println(str);
+    }
+
+    // 带参数的方法中的局部变量
+    public void method(int num) {
+        int sum = num + 10; // 栈中分配的局部变量
+        System.out.println(sum);
+    }
+
+    // 构造方法中的局部变量
+    public VariableExample(String name, int age) {
+        this.name = name; // 对成员变量进行赋值
+        this.age = age; // 对成员变量进行赋值
+        int num = 20; // 栈中分配的局部变量
+        String str = "Hello, " + this.name + "!"; // 栈中分配的局部变量
+        System.out.println(num);
+        System.out.println(str);
+    }
+}
+```
+
+## 静态变量有什么作用？
+被`static`修饰的变量为静态变量，可以被类的所有实例共享，只会被分配一次内存。静态变量可以通过类名来访问。
+
+```java
+public class StaticVariableExample {
+    // 静态变量
+    public static int staticVar = 0;
+}
+```
+
+通常情况下，静态变量会被 `final` 关键字修饰成为常量。
+
+```java
+public class ConstantVariableExample {
+    // 常量
+    public static final int constantVar = 0;
+}
+```
+
+## 字符型常量和字符串常量的区别?
++ 形式 : 字符常量是单引号引起的一个字符，字符串常量是双引号引起的 0 个或若干个字符
++ 含义 : 字符常量相当于一个整型值( ASCII 值)，可以参加表达式运算；字符串常量代表一个地址值(该字符串在内存中存放位置)
++ 占内存大小：字符常量只占 2 个字节; 字符串常量占若干个字节。
+
+注意：`char` 在 Java 中占两个字节。字符型常量和字符串常量代码示例：
+
+```java
+public class StringExample {
+    // 字符型常量
+    public static final char LETTER_A = 'A';
+
+    // 字符串常量
+    public static final String GREETING_MESSAGE = "Hello, world!";
+    public static void main(String[] args) {
+        System.out.println("字符型常量占用的字节数为："+Character.BYTES);
+        System.out.println("字符串常量占用的字节数为："+GREETING_MESSAGE.getBytes().length);
+    }
+}
+```
+
+输出：
+
+
+
