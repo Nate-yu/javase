@@ -513,5 +513,213 @@ public class StringExample {
 
 输出：
 
+```java
+字符型常量占用的字节数为：2
+字符串常量占用的字节数为：13
+```
 
+# 方法
+## 什么是方法的返回值?方法有哪几种类型？
+方法的返回值 是指我们获取到的某个方法体中的代码执行后产生的结果（前提是该方法可能产生结果）。返回值的作用是接收出结果，使得它可以用于其他的操作！
+
+我们可以按照方法的返回值和参数类型将方法分为下面这几种：
+
+1. 无参数无返回值的方法
+
+```java
+public void f1() {
+    //......
+}
+// 下面这个方法也没有返回值，虽然用到了 return
+public void f(int a) {
+    if (...) {
+        // 表示结束方法的执行,下方的输出语句不会执行
+        return;
+    }
+    System.out.println(a);
+}
+```
+
+2. 有参数无返回值的方法
+
+```java
+public void f2(Parameter 1, ..., Parameter n) {
+    //......
+}
+```
+
+3. 有返回值有参数的方法
+
+```java
+public int f4(int a, int b) {
+    return a * b;
+}
+```
+
+## 静态方法为什么不能调用非静态成员?
+这个需要结合 JVM 的相关知识，主要原因如下：
+
+1. 静态方法是属于类的，在类加载时就会分配内存，可以通过类名直接访问。而非静态成员属于实例对象，只有在对象实例化之后才存在，需要通过类的实例对象去访问
+2. 在类的非静态成员不存在的时候，静态方法就已经存在了，此时调用在内存中还不存在的非静态成员，属于非法操作
+
+## 静态方法和实例方法有何不同？
+1. 调用方式
+
+在外部调用静态方法时，可以使用 `类名.方法名` 的方式，也可以使用 `对象.方法名` 的方式，而实例方法只有后面这种方式。也就是说，调用静态方法可以无需创建对象 。
+
+不过，需要注意的是一般不建议使用 `对象.方法名` 的方式来调用**静态方法**。这种方式非常容易造成混淆，静态方法不属于类的某个对象而是属于这个类。
+
+因此，一般建议使用 `类名.方法名` 的方式来调用**静态方法**。
+
+```java
+public class Person {
+    public void method() {
+      //......
+    }
+
+    public static void staicMethod(){
+      //......
+    }
+    public static void main(String[] args) {
+        Person person = new Person();
+        // 调用实例方法
+        person.method();
+        // 调用静态方法
+        Person.staicMethod()
+    }
+}
+```
+
+2. 访问类成员是否存在限制
+
+静态方法在访问本类的成员时，只允许访问静态成员（即静态成员变量和静态方法），不允许访问实例成员（即实例成员变量和实例方法），而实例方法不存在这个限制。
+
+## 重载和重写有什么区别？
+**重载**就是同样的一个方法能够根据输入数据的不同，做出不同的处理
+
+**重写**就是当子类继承自父类的相同方法，输入数据一样，但要做出有别于父类的响应时，你就要覆盖父类方法
+
+### 重载
+发生在同一个类中（或者父类和子类之间），方法名必须相同，参数类型不同、个数不同、顺序不同，方法返回值和访问修饰符可以不同。
+
+综上：重载就是同一个类中多个同名方法根据不同的传参来执行不同的逻辑处理。
+
+### 重写
+重写发生在运行期，是子类对父类的允许访问的方法的实现过程进行重新编写。
+
+1. 方法名、参数列表必须相同，子类方法返回值类型应比父类方法返回值类型更小或相等，抛出的异常范围小于等于父类，访问修饰符范围大于等于父类。
+2. 如果父类方法访问修饰符为 `private/final/static` 则子类就不能重写该方法，但是被 static 修饰的方法能够被再次声明。
+3. 构造方法无法被重写
+
+综上：重写就是**子类对父类方法**的重新改造，外部样子不能改变，内部逻辑可以改变。
+
+![](https://cdn.nlark.com/yuque/0/2025/png/25941432/1741004910668-c4eea829-fc6e-475b-950b-94dfa3360bdd.png)
+
+方法的重写要遵循“两同两小一大”：
+
++ “两同”即方法名相同、形参列表相同；
++ “两小”指的是子类方法返回值类型应比父类方法返回值类型更小或相等，子类方法声明抛出的异常类应比父类方法声明抛出的异常类更小或相等；
++ “一大”指的是子类方法的访问权限应比父类方法的访问权限更大或相等。
+
+如果方法的返回类型是 void 和基本数据类型，则返回值重写时不可修改。但是如果方法的返回值是引用类型，重写时是可以返回该引用类型的子类的。
+
+```java
+public class Hero {
+    public String name() {
+        return "超级英雄";
+    }
+}
+public class SuperMan extends Hero{
+    @Override
+    public String name() {
+        return "超人";
+    }
+    public Hero hero() {
+        return new Hero();
+    }
+}
+
+public class SuperSuperMan extends SuperMan {
+    @Override
+    public String name() {
+        return "超级超级英雄";
+    }
+
+    @Override
+    public SuperMan hero() {
+        return new SuperMan();
+    }
+}
+```
+
+## 什么是可变长参数？
+可变长参数就是允许在调用方法时传入不定长度的参数。就比如下面这个方法就可以接受 0 个或者多个参数：
+
+```java
+public static void method1(String... args) {
+   //......
+}
+```
+
+另外，可变参数只能作为函数的最后一个参数，但其前面可以有也可以没有任何其他参数。
+
+```java
+public static void method2(String arg1, String... args) {
+   //......
+}
+```
+
+**遇到方法重载的情况怎么办呢？会优先匹配固定参数还是可变参数的方法呢？**
+
+答：会优先匹配固定参数的方法，因为固定参数的方法匹配度更高。
+
+```java
+package method;
+
+public class VariableLengthArgument {
+    public static void printVariable(String... args) {
+        for (String s : args) {
+            System.out.println(s);
+        }
+    }
+
+    public static void printVariable(String arg1, String arg2) {
+        System.out.println(arg1 + arg2);
+    }
+
+    public static void main(String[] args) {
+        printVariable("a", "b");
+        printVariable("a","b","c","d");
+    }
+}
+```
+
+输出：
+
+```plain
+ab
+a
+b
+c
+d
+```
+
+另外，Java 的可变参数编译后实际会被转换成一个数组，我们看编译后生成的 class文件就可以看出来了。
+
+```java
+public class VariableLengthArgument {
+
+    public static void printVariable(String... args) {
+        String[] var1 = args;
+        int var2 = args.length;
+
+        for(int var3 = 0; var3 < var2; ++var3) {
+            String s = var1[var3];
+            System.out.println(s);
+        }
+        
+    }
+    // ......
+}
+```
 
