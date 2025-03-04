@@ -723,3 +723,271 @@ public class VariableLengthArgument {
 }
 ```
 
+# 面向对象基础
+## 面向对象和面向过程的区别
++ **<font style="color:rgb(60, 60, 67);">面向过程编程（POP）</font>**<font style="color:rgb(60, 60, 67);">：面向过程把解决问题的过程拆成一个个方法，通过一个个方法的执行解决问题。</font>
++ **<font style="color:rgb(60, 60, 67);">面向对象编程（OOP）</font>**<font style="color:rgb(60, 60, 67);">：面向对象会先抽象出对象，然后用对象执行方法的方式解决问题。</font>
+
+## <font style="color:rgb(60, 60, 67);">创建一个对象用什么运算符?对象实体与对象引用有何不同?</font>
+new 运算符，new 创建对象实例（对象实例在堆内存中），对象引用指向对象实例（对象引用存放在栈内存中）。
+
++ 一个对象引用可以指向 0 个或 1 个对象（一根绳子可以不系气球，也可以系一个气球）；
++ 一个对象可以有 n 个引用指向它（可以用 n 条绳子系住一个气球）。
+
+## 对象的相等和引用相等的区别
++ <font style="color:rgb(60, 60, 67);">对象的相等一般比较的是内存中存放的内容是否相等。</font>
++ <font style="color:rgb(60, 60, 67);">引用相等一般比较的是他们指向的内存地址是否相等。</font>
+
+```java
+public class ObjectTest {
+    public static void main(String[] args) {
+        String s1 = "hello";
+        String s2 = new String("hello");
+        String s3 = "hello";
+
+        // 使用 == 比较字符串的引用相等
+        System.out.println(s1 == s2);
+        System.out.println(s1 == s3);
+
+        // 使用 equals 方法比较字符串相等
+        System.out.println(s1.equals(s2));
+        System.out.println(s1.equals(s3));
+    }
+}
+```
+
+从上面的代码输出结果可以看出：
+
++ `str1` 和 `str2` 不相等，而 `str1` 和 `str3` 相等。这是因为 `==` 运算符比较的是字符串的引用是否相等。
++ `str1`、 `str2`、`str3` 三者的内容都相等。这是因为`equals` 方法比较的是字符串的内容，即使这些字符串的对象引用不同，只要它们的内容相等，就认为它们是相等的。
+
+## 构造方法有哪些特点？是否可被 override?
+构造方法具有以下特点：
+
++ **名称与类名相同**：构造方法的名称必须与类名完全一致。
++ **没有返回值**：构造方法没有返回类型，且不能使用 `void` 声明。
++ **自动执行**：在生成类的对象时，构造方法会自动执行，无需显式调用。
+
+构造方法**不能被重写（override）**，但**可以被重载（overload）**。因此，一个类中可以有多个构造方法，这些构造方法可以具有不同的参数列表，以提供不同的对象初始化方式。
+
+## 面向对象三大特征
+### 封装
+封装是指把一个对象的状态信息（属性）隐藏在对象内部，不允许外部对象直接访问对象内部信息。但可以提供一些可以被外界访问的方法来操作属性。
+
+```java
+public class Student {
+    private int id;//id属性私有化
+    private String name;//name属性私有化
+
+    //获取id的方法
+    public int getId() {
+        return id;
+    }
+
+    //设置id的方法
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    //获取name的方法
+    public String getName() {
+        return name;
+    }
+
+    //设置name的方法
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+```
+
+### 继承
+继承是使用已存在的类的定义作为基础建立新类的技术，新类的定义可以增加新的数据或新的功能，也可以使用父类的功能，但不能选择性地继承父类。
+
+1. 子类拥有父类对象的所有属性和方法（包括私有属性和方法），但父类中私有属性和方法子类无法访问，只是拥有
+2. 子类可以对父类进行扩展
+3. 子类可以用自己的方式实现父类的方法
+
+### 多态
+表示一个对象具有多种状态，具体表现为父类的引用指向子类的实例。
+
+多态特点：
+
++ 对象类型和引用类型之间具有继承（类）/实现（接口）的关系
++ 引用类型变量发出的方法调用的是哪个类中的方法，必须在程序运行期间才能确定
++ 多态不能调用“只在子类存在但在父类不存在”的方法
++ 如果子类重写了父类的方法，整整执行的是子类重写的方法，否则执行的就是父类的方法
+
+## 接口和抽象类有什么共同点和区别？
+### 接口和抽象类的共同点
++ **<font style="color:rgb(60, 60, 67);">实例化</font>**<font style="color:rgb(60, 60, 67);">：接口和抽象类都不能直接实例化，只能被实现（接口）或继承（抽象类）后才能创建具体的对象。</font>
++ **<font style="color:rgb(60, 60, 67);">抽象方法</font>**<font style="color:rgb(60, 60, 67);">：接口和抽象类都可以包含抽象方法。抽象方法没有方法体，必须在子类或实现类中实现。</font>
+
+### <font style="color:rgb(60, 60, 67);">接口和抽象类的区别</font>
++ **设计目的**：接口主要用于对类的行为进行约束，你实现了某个接口就具有了对应的行为。抽象类主要用于代码复用，强调的是所属关系。
++ **继承和实现**：一个类只能继承一个类（包括抽象类），因为 Java 不支持多继承。但一个类可以实现多个接口，一个接口也可以继承多个其他接口。
++ **成员变量**：接口中的成员变量只能是 `public static final` 类型的，不能被修改且必须有初始值。抽象类的成员变量可以有任何修饰符（`private`, `protected`, `public`），可以在子类中被重新定义或赋值。
++ **方法**： 
+    - Java 8 之前，接口中的方法默认是 `public abstract` ，也就是只能有方法声明。自 Java 8 起，可以在接口中定义 `default`（默认） 方法和 `static` （静态）方法。 自 Java 9 起，接口可以包含 `private` 方法。
+    - 抽象类可以包含抽象方法和非抽象方法。抽象方法没有方法体，必须在子类中实现。非抽象方法有具体实现，可以直接在抽象类中使用或在子类中重写。
+
+<font style="color:rgb(60, 60, 67);">Java 8 引入的</font>`<font style="color:rgb(60, 60, 67);">default</font>`<font style="color:rgb(60, 60, 67);"> 方法用于提供接口方法的默认实现，可以在实现类中被覆盖。这样就可以在不修改实现类的情况下向现有接口添加新功能，从而增强接口的扩展性和向后兼容性。</font>
+
+```java
+public interface MyInterface {
+    default void defaultMethod() {
+        System.out.println("This is a default method.");
+    }
+}
+```
+
+ Java 8 引入的`static` 方法无法在实现类中被覆盖，只能通过接口名直接调用（ `MyInterface.staticMethod()`），类似于类中的静态方法。`static` 方法通常用于定义一些通用的、与接口相关的工具方法，一般很少用。
+
+```java
+public interface MyInterface {
+    static void staticMethod() {
+        System.out.println("This is a static method in the interface.");
+    }
+}
+```
+
+<font style="color:rgb(60, 60, 67);">Java 9 允许在接口中使用 </font>`<font style="color:rgb(60, 60, 67);">private</font>`<font style="color:rgb(60, 60, 67);"> 方法。</font>`<font style="color:rgb(60, 60, 67);">private</font>`<font style="color:rgb(60, 60, 67);">方法可以用于在接口内部共享代码，不对外暴露。</font>
+
+```java
+public interface MyInterface {
+    // default 方法
+    default void defaultMethod() {
+        commonMethod();
+    }
+
+    // static 方法
+    static void staticMethod() {
+        commonMethod();
+    }
+
+    // 私有静态方法，可以被 static 和 default 方法调用
+    private static void commonMethod() {
+        System.out.println("This is a private method used internally.");
+    }
+
+      // 实例私有方法，只能被 default 方法调用。
+    private void instanceCommonMethod() {
+        System.out.println("This is a private instance method used internally.");
+    }
+}
+```
+
+## 深拷贝和浅拷贝区别了解吗？什么是引用拷贝？
++ **浅拷贝**：浅拷贝会在堆上创建一个新的对象（区别于引用拷贝的一点），不过，如果原对象内部的属性是引用类型的话，浅拷贝会直接复制内部对象的引用地址，也就是说拷贝对象和原对象共用同一个内部对象。
++ **深拷贝**：深拷贝会完全复制整个对象，包括这个对象所包含的内部对象。
+
+### 浅拷贝
+<font style="color:rgb(60, 60, 67);">浅拷贝的示例代码如下，我们这里实现了</font><font style="color:rgb(60, 60, 67);"> </font>`<font style="color:rgb(60, 60, 67);">Cloneable</font>`<font style="color:rgb(60, 60, 67);"> </font><font style="color:rgb(60, 60, 67);">接口，并重写了</font><font style="color:rgb(60, 60, 67);"> </font>`<font style="color:rgb(60, 60, 67);">clone()</font>`<font style="color:rgb(60, 60, 67);"> </font><font style="color:rgb(60, 60, 67);">方法。</font>
+
+`<font style="color:rgb(60, 60, 67);">clone()</font>`<font style="color:rgb(60, 60, 67);"> 方法的实现很简单，直接调用的是父类 </font>`<font style="color:rgb(60, 60, 67);">Object</font>`<font style="color:rgb(60, 60, 67);"> 的 </font>`<font style="color:rgb(60, 60, 67);">clone()</font>`<font style="color:rgb(60, 60, 67);"> 方法。</font>
+
+```java
+public class Address implements Cloneable {
+    private String name;
+    
+    // 构造方法
+    public Address(String name) {
+        this.name = name;
+    }
+
+    // Getter方法
+    public String getName() {
+        return name;
+    }
+
+    // Setter方法
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public Address clone() {
+        try {
+            return (Address) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
+    }
+}
+
+public class Person implements Cloneable {
+    private Address address;
+    
+    // 构造方法
+    public Person(Address address) {
+        this.address = address;
+    }
+
+    // Getter方法
+    public Address getAddress() {
+        return address;
+    }
+
+    // Setter方法
+    public void setAddress(Address address) {
+        this.address = address;
+    }
+
+    @Override
+    public Person clone() {
+        try {
+            Person person = (Person) super.clone();
+            return person;  // 浅拷贝，不对address进行clone
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
+    }
+}
+```
+
+<font style="color:rgb(60, 60, 67);">测试：</font>
+
+```java
+Person person1 = new Person(new Address("武汉"));
+Person person1Copy = person1.clone();
+// true
+System.out.println(person1.getAddress() == person1Copy.getAddress());
+```
+
+<font style="color:rgb(60, 60, 67);">从输出结构就可以看出， </font>`<font style="color:rgb(60, 60, 67);">person1</font>`<font style="color:rgb(60, 60, 67);"> 的克隆对象和 </font>`<font style="color:rgb(60, 60, 67);">person1</font>`<font style="color:rgb(60, 60, 67);"> 使用的仍然是同一个 </font>`<font style="color:rgb(60, 60, 67);">Address</font>`<font style="color:rgb(60, 60, 67);"> 对象。</font>
+
+### 深拷贝
+<font style="color:rgb(60, 60, 67);">这里我们简单对 </font>`<font style="color:rgb(60, 60, 67);">Person</font>`<font style="color:rgb(60, 60, 67);"> 类的 </font>`<font style="color:rgb(60, 60, 67);">clone()</font>`<font style="color:rgb(60, 60, 67);"> 方法进行修改，连带着要把 </font>`<font style="color:rgb(60, 60, 67);">Person</font>`<font style="color:rgb(60, 60, 67);"> 对象内部的 </font>`<font style="color:rgb(60, 60, 67);">Address</font>`<font style="color:rgb(60, 60, 67);"> 对象一起复制。</font>
+
+```java
+public Person clone() {
+    try {
+        Person person = (Person) super.clone();
+//            return person;  // 浅拷贝，不对address进行clone
+        person.setAddress(person.getAddress().clone()); // 深拷贝
+        return person;
+    } catch (CloneNotSupportedException e) {
+        throw new AssertionError();
+    }
+}
+```
+
+<font style="color:rgb(60, 60, 67);">测试：</font>
+
+```java
+Person person1 = new Person(new Address("武汉"));
+Person person1Copy = person1.clone();
+// true
+System.out.println(person1.getAddress() == person1Copy.getAddress());
+```
+
+<font style="color:rgb(60, 60, 67);">从输出结构就可以看出，显然 </font>`<font style="color:rgb(60, 60, 67);">person1</font>`<font style="color:rgb(60, 60, 67);"> 的克隆对象和 </font>`<font style="color:rgb(60, 60, 67);">person1</font>`<font style="color:rgb(60, 60, 67);"> 包含的 </font>`<font style="color:rgb(60, 60, 67);">Address</font>`<font style="color:rgb(60, 60, 67);"> 对象已经是不同的了。</font>
+
+**<font style="color:rgb(60, 60, 67);">那什么是引用拷贝呢？</font>**<font style="color:rgb(60, 60, 67);"> </font><font style="color:rgb(60, 60, 67);">简单来说，引用拷贝就是两个不同的引用指向同一个对象。</font>
+
+<font style="color:rgb(60, 60, 67);">描述浅拷贝、深拷贝、引用拷贝：</font>
+
+![](https://cdn.nlark.com/yuque/0/2025/png/25941432/1741092952962-4596a3ce-0834-43c7-b683-74857a00fcd6.png)
+
+
+
