@@ -1059,7 +1059,151 @@ public boolean equals(Object obj) {
 + `equals` 方法判断两个对象是相等的，那这两个对象的 `hashCode` 值也要相等。
 + 两个对象有相同的 `hashCode` 值，他们也不一定是相等的（哈希碰撞）。
 
+# String
+## String、StringBuffer、StringBuilder 的区别？
+**可变性**
 
+`String` 是不可变的。
 
-<font style="color:rgb(60, 60, 67);"></font>
+`StringBuilder` 与 `StringBuffer` 都继承自 `AbstractStringBuilder` 类，在 `AbstractStringBuilder` 中也是使用字符数组保存字符串，不过没有使用 `final` 和 `private` 关键字修饰，最关键的是这个 `AbstractStringBuilder` 类还提供了很多修改字符串的方法比如 `append` 方法。
+
+```java
+abstract class AbstractStringBuilder implements Appendable, CharSequence {
+    char[] value;
+    public AbstractStringBuilder append(String str) {
+        if (str == null)
+            return appendNull();
+        int len = str.length();
+        ensureCapacityInternal(count + len);
+        str.getChars(0, len, value, count);
+        count += len;
+        return this;
+    }
+    //...
+}
+```
+
+**线程安全性**
+
+`<font style="color:rgb(60, 60, 67);">String</font>`<font style="color:rgb(60, 60, 67);"> 中的对象是不可变的，也就可以理解为常量，线程安全。</font>`<font style="color:rgb(60, 60, 67);">AbstractStringBuilder</font>`<font style="color:rgb(60, 60, 67);"> 是 </font>`<font style="color:rgb(60, 60, 67);">StringBuilder</font>`<font style="color:rgb(60, 60, 67);"> 与 </font>`<font style="color:rgb(60, 60, 67);">StringBuffer</font>`<font style="color:rgb(60, 60, 67);"> 的公共父类，定义了一些字符串的基本操作，如 </font>`<font style="color:rgb(60, 60, 67);">expandCapacity</font>`<font style="color:rgb(60, 60, 67);">、</font>`<font style="color:rgb(60, 60, 67);">append</font>`<font style="color:rgb(60, 60, 67);">、</font>`<font style="color:rgb(60, 60, 67);">insert</font>`<font style="color:rgb(60, 60, 67);">、</font>`<font style="color:rgb(60, 60, 67);">indexOf</font>`<font style="color:rgb(60, 60, 67);"> 等公共方法。</font>`<font style="color:rgb(60, 60, 67);">StringBuffer</font>`<font style="color:rgb(60, 60, 67);"> 对方法加了同步锁或者对调用的方法加了同步锁，所以是线程安全的。</font>`<font style="color:rgb(60, 60, 67);">StringBuilder</font>`<font style="color:rgb(60, 60, 67);"> 并没有对方法进行加同步锁，所以是非线程安全的。</font>
+
+**性能**
+
+<font style="color:rgb(60, 60, 67);">每次对 </font>`<font style="color:rgb(60, 60, 67);">String</font>`<font style="color:rgb(60, 60, 67);"> 类型进行改变的时候，都会生成一个新的 </font>`<font style="color:rgb(60, 60, 67);">String</font>`<font style="color:rgb(60, 60, 67);"> 对象，然后将指针指向新的 </font>`<font style="color:rgb(60, 60, 67);">String</font>`<font style="color:rgb(60, 60, 67);"> 对象。</font>`<font style="color:rgb(60, 60, 67);">StringBuffer</font>`<font style="color:rgb(60, 60, 67);"> 每次都会对 </font>`<font style="color:rgb(60, 60, 67);">StringBuffer</font>`<font style="color:rgb(60, 60, 67);"> 对象本身进行操作，而不是生成新的对象并改变对象引用。相同情况下使用 </font>`<font style="color:rgb(60, 60, 67);">StringBuilder</font>`<font style="color:rgb(60, 60, 67);"> 相比使用 </font>`<font style="color:rgb(60, 60, 67);">StringBuffer</font>`<font style="color:rgb(60, 60, 67);"> 仅能获得 10%~15% 左右的性能提升，但却要冒多线程不安全的风险。</font>
+
+**对于三者使用的总结：**
+
++ <font style="color:rgb(60, 60, 67);">操作少量的数据: 适用 </font>`<font style="color:rgb(60, 60, 67);">String</font>`
++ <font style="color:rgb(60, 60, 67);">单线程操作字符串缓冲区下操作大量数据: 适用 </font>`<font style="color:rgb(60, 60, 67);">StringBuilder</font>`
++ <font style="color:rgb(60, 60, 67);">多线程操作字符串缓冲区下操作大量数据: 适用 </font>`<font style="color:rgb(60, 60, 67);">StringBuffer</font>`
+
+## String 为什么是不可变的?
+`<font style="color:rgb(60, 60, 67);">String</font>`<font style="color:rgb(60, 60, 67);"> 类中使用 </font>`<font style="color:rgb(60, 60, 67);">final</font>`<font style="color:rgb(60, 60, 67);"> 关键字修饰字符数组来保存字符串</font>
+
+我们知道被 `final` 关键字修饰的类不能被继承，修饰的方法不能被重写，修饰的变量是基本数据类型则值不能改变，修饰的变量是引用类型则不能再指向其他对象。因此，`final` 关键字修饰的数组保存字符串并不是 `String` 不可变的根本原因，因为这个数组保存的字符串是可变的（`final` 修饰引用类型变量的情况）。
+
+`<font style="color:rgb(60, 60, 67);">String</font>`<font style="color:rgb(60, 60, 67);"> 真正不可变有下面几点原因：</font>
+
+1. <font style="color:rgb(60, 60, 67);">保存字符串的数组被 </font>`<font style="color:rgb(60, 60, 67);">final</font>`<font style="color:rgb(60, 60, 67);"> 修饰且为私有的，并且</font>`<font style="color:rgb(60, 60, 67);">String</font>`<font style="color:rgb(60, 60, 67);"> 类没有提供/暴露修改这个字符串的方法。</font>
+2. `<font style="color:rgb(60, 60, 67);">String</font>`<font style="color:rgb(60, 60, 67);"> 类被 </font>`<font style="color:rgb(60, 60, 67);">final</font>`<font style="color:rgb(60, 60, 67);"> 修饰导致其不能被继承，进而避免了子类破坏 </font>`<font style="color:rgb(60, 60, 67);">String</font>`<font style="color:rgb(60, 60, 67);"> 不可变。</font>
+
+## 字符串拼接用“+” 还是 StringBuilder?
+<font style="color:rgb(60, 60, 67);">Java 语言本身并不支持运算符重载，“+”和“+=”是专门为 String 类重载过的运算符，也是 Java 中仅有的两个重载过的运算符。字符串对象通过“+”的字符串拼接方式，实际上是通过 </font>`<font style="color:rgb(60, 60, 67);">StringBuilder</font>`<font style="color:rgb(60, 60, 67);"> 调用 </font>`<font style="color:rgb(60, 60, 67);">append()</font>`<font style="color:rgb(60, 60, 67);"> 方法实现的，拼接完成之后调用 </font>`<font style="color:rgb(60, 60, 67);">toString()</font>`<font style="color:rgb(60, 60, 67);"> 得到一个 </font>`<font style="color:rgb(60, 60, 67);">String</font>`<font style="color:rgb(60, 60, 67);"> 对象 。</font>
+
+<font style="color:rgb(60, 60, 67);">不过，在循环内使用“+”进行字符串的拼接的话，存在比较明显的缺陷：</font>**<font style="color:rgb(60, 60, 67);">编译器不会创建单个 </font>**`**<font style="color:rgb(60, 60, 67);">StringBuilder</font>**`**<font style="color:rgb(60, 60, 67);"> 以复用，会导致创建过多的 </font>**`**<font style="color:rgb(60, 60, 67);">StringBuilder</font>**`**<font style="color:rgb(60, 60, 67);"> 对象</font>**<font style="color:rgb(60, 60, 67);">。</font>`<font style="color:rgb(60, 60, 67);">StringBuilder</font>`<font style="color:rgb(60, 60, 67);"> 对象是在循环内部被创建的，这意味着每循环一次就会创建一个 </font>`<font style="color:rgb(60, 60, 67);">StringBuilder</font>`<font style="color:rgb(60, 60, 67);"> 对象。如果直接使用 </font>`<font style="color:rgb(60, 60, 67);">StringBuilder</font>`<font style="color:rgb(60, 60, 67);"> 对象进行字符串拼接的话，就不会存在这个问题了。</font>
+
+## <font style="color:rgb(60, 60, 67);">String#equals() 和 Object#equals() 有何区别？</font>
+`<font style="color:rgb(60, 60, 67);">String</font>`<font style="color:rgb(60, 60, 67);"> 中的 </font>`<font style="color:rgb(60, 60, 67);">equals</font>`<font style="color:rgb(60, 60, 67);"> 方法是被重写过的，比较的是 String 字符串的值是否相等。 </font>`<font style="color:rgb(60, 60, 67);">Object</font>`<font style="color:rgb(60, 60, 67);"> 的 </font>`<font style="color:rgb(60, 60, 67);">equals</font>`<font style="color:rgb(60, 60, 67);"> 方法是比较的对象的内存地址。</font>
+
+## <font style="color:rgb(60, 60, 67);">字符串常量池的作用了解吗？</font>
+**<font style="color:rgb(60, 60, 67);">字符串常量池</font>**<font style="color:rgb(60, 60, 67);"> 是 JVM 为了提升性能和减少内存消耗针对字符串（String 类）专门开辟的一块区域，主要目的是为了避免字符串的重复创建。</font>
+
+```java
+// 在字符串常量池中创建字符串对象 ”ab“
+// 将字符串对象 ”ab“ 的引用赋值给 aa
+String aa = "ab";
+// 直接返回字符串常量池中字符串对象 ”ab“，赋值给引用 bb
+String bb = "ab";
+System.out.println(aa==bb); // true
+```
+
+## String s1 = new String("abc");这句话创建了几个字符串对象？
+会创建 1 或 2 个字符串对象。
+
+1. 字符串常量池中不存在 "abc"：会创建 2 个 字符串对象。一个在字符串常量池中，由 `ldc` 指令触发创建。一个在堆中，由 `new String()` 创建，并使用常量池中的 "abc" 进行初始化。
+2. 字符串常量池中已存在 "abc"：会创建 1 个 字符串对象。该对象在堆中，由 `new String()` 创建，并使用常量池中的 "abc" 进行初始化。
+
+## String#intern 方法有什么作用?
+`String.intern()` 是一个 `native` (本地) 方法，用来处理字符串常量池中的字符串对象引用。它的工作流程可以概括为以下两种情况：
+
+1. **常量池中已有相同内容的字符串对象**：如果字符串常量池中已经有一个与调用 `intern()` 方法的字符串内容相同的 `String` 对象，`intern()` 方法会直接返回常量池中该对象的引用。
+2. **常量池中没有相同内容的字符串对象**：如果字符串常量池中还没有一个与调用 `intern()` 方法的字符串内容相同的对象，`intern()` 方法会将当前字符串对象的引用添加到字符串常量池中，并返回该引用。
+
+总结：
+
++ `intern()` 方法的主要作用是确保字符串引用在常量池中的唯一性。
++ 当调用 `intern()` 时，如果常量池中已经存在相同内容的字符串，则返回常量池中已有对象的引用；否则，将该字符串添加到常量池并返回其引用。
+
+```java
+// s1 指向字符串常量池中的 "Java" 对象
+String s1 = "Java";
+// s2 也指向字符串常量池中的 "Java" 对象，和 s1 是同一个对象
+String s2 = s1.intern();
+// 在堆中创建一个新的 "Java" 对象，s3 指向它
+String s3 = new String("Java");
+// s4 指向字符串常量池中的 "Java" 对象，和 s1 是同一个对象
+String s4 = s3.intern();
+// s1 和 s2 指向的是同一个常量池中的对象
+System.out.println(s1 == s2); // true
+// s3 指向堆中的对象，s4 指向常量池中的对象，所以不同
+System.out.println(s3 == s4); // false
+// s1 和 s4 都指向常量池中的同一个对象
+System.out.println(s1 == s4); // true
+```
+
+## String 类型的变量和常量做“+”运算时发生了什么？
+先来看字符串不加 `final`关键字拼接的情况：
+
+```java
+String str1 = "str";
+String str2 = "ing";
+String str3 = "str" + "ing";
+String str4 = str1 + str2;
+String str5 = "string";
+System.out.println(str3 == str4);//false
+System.out.println(str3 == str5);//true
+System.out.println(str4 == str5);//false
+```
+
+**注意**：比较 String 字符串的值是否相等，可以使用 `equals()` 方法。 `String` 中的 `equals` 方法是被重写过的。 `Object` 的 `equals` 方法是比较的对象的内存地址，而 `String` 的 `equals` 方法比较的是字符串的值是否相等。如果你使用 `==` 比较两个字符串是否相等的话，IDEA 还是提示你使用 `equals()` 方法替换。
+
+<font style="color:rgb(60, 60, 67);">我们在平时写代码的时候，尽量避免多个字符串对象拼接，因为这样会重新创建对象。如果需要改变字符串的话，可以使用 </font>`<font style="color:rgb(60, 60, 67);">StringBuilder</font>`<font style="color:rgb(60, 60, 67);"> 或者 </font>`<font style="color:rgb(60, 60, 67);">StringBuffer</font>`<font style="color:rgb(60, 60, 67);">。</font>
+
+<font style="color:rgb(60, 60, 67);">不过，字符串使用 </font>`<font style="color:rgb(60, 60, 67);">final</font>`<font style="color:rgb(60, 60, 67);"> 关键字声明之后，可以让编译器当做常量来处理。</font>
+
+```java
+final String str1 = "str";
+final String str2 = "ing";
+// 下面两个表达式其实是等价的
+String c = "str" + "ing";// 常量池中的对象
+String d = str1 + str2; // 常量池中的对象
+System.out.println(c == d);// true
+```
+
+被 `final` 关键字修饰之后的 `String` 会被编译器当做常量来处理，编译器在程序编译期就可以确定它的值，其效果就相当于访问常量。
+
+如果 ，编译器在运行时才能知道其确切值的话，就无法对其优化。
+
+示例代码（`str2` 在运行时才能确定其值）：
+
+```java
+final String str1 = "str";
+final String str2 = getStr();
+String c = "str" + "ing";// 常量池中的对象
+String d = str1 + str2; // 在堆上创建的新的对象
+System.out.println(c == d);// false
+public static String getStr() {
+      return "ing";
+}
+```
 
