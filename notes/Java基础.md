@@ -1382,5 +1382,106 @@ catch (IOException e) {
 + 建议抛出更加具体的异常比如字符串转换为数字格式错误的时候应该抛出`NumberFormatException`而不是其父类`IllegalArgumentException`。
 + 避免重复记录日志：如果在捕获异常的地方已经记录了足够的信息（包括异常类型、错误信息和堆栈跟踪等），那么在业务代码中再次抛出这个异常时，就不应该再次记录相同的错误信息。重复记录日志会使得日志文件膨胀，并且可能会掩盖问题的实际原因，使得问题更难以追踪和解决。
 
+# 泛型
+## 什么是泛型？有什么作用？
+<font style="color:rgb(60, 60, 67);">使用泛型参数，可以增强代码的可读性以及稳定性。</font>
+
+<font style="color:rgb(60, 60, 67);">编译器可以对泛型参数进行检测，并且通过泛型参数可以指定传入的对象类型。比如 </font>`<font style="color:rgb(60, 60, 67);">ArrayList<Person> persons = new ArrayList<Person>()</font>`<font style="color:rgb(60, 60, 67);"> 这行代码就指明了该 </font>`<font style="color:rgb(60, 60, 67);">ArrayList</font>`<font style="color:rgb(60, 60, 67);"> 对象只能传入 </font>`<font style="color:rgb(60, 60, 67);">Person</font>`<font style="color:rgb(60, 60, 67);"> 对象，如果传入其他类型的对象就会报错。</font>
+
+```java
+ArrayList<E> extends AbstractList<E>
+```
+
+并且，原生 List 返回类型是 Object ，需要手动转换类型才能使用，使用泛型后编译器自动转换。
+
+## 泛型的使用方式有哪几种？
+<font style="color:rgb(60, 60, 67);">泛型一般有三种使用方式:</font>**<font style="color:rgb(60, 60, 67);">泛型类</font>**<font style="color:rgb(60, 60, 67);">、</font>**<font style="color:rgb(60, 60, 67);">泛型接口</font>**<font style="color:rgb(60, 60, 67);">、</font>**<font style="color:rgb(60, 60, 67);">泛型方法</font>**<font style="color:rgb(60, 60, 67);">。</font>
+
+1. 泛型类
+
+```java
+//此处T可以随便写为任意标识，常见的如T、E、K、V等形式的参数常用于表示泛型
+//在实例化泛型类时，必须指定T的具体类型
+public class Generic<T>{
+
+    private T key;
+
+    public Generic(T key) {
+        this.key = key;
+    }
+
+    public T getKey(){
+        return key;
+    }
+}
+```
+
+<font style="color:rgb(60, 60, 67);">如何实例化泛型类：</font>
+
+```java
+Generic<Integer> genericInteger = new Generic<Integer>(123456);
+```
+
+2. 泛型接口
+
+```java
+public interface Generator<T> {
+    public T method();
+}
+```
+
+<font style="color:rgb(60, 60, 67);">实现泛型接口，不指定类型：</font>
+
+```java
+class GeneratorImpl<T> implements Generator<T>{
+    @Override
+    public T method() {
+        return null;
+    }
+}
+```
+
+<font style="color:rgb(60, 60, 67);">实现泛型接口，指定类型：</font>
+
+```java
+class GeneratorImpl implements Generator<String> {
+    @Override
+    public String method() {
+        return "hello";
+    }
+}
+```
+
+3. 泛型方法
+
+```java
+public static < E > void printArray( E[] inputArray )
+{
+     for ( E element : inputArray ){
+        System.out.printf( "%s ", element );
+     }
+     System.out.println();
+}
+```
+
+使用：
+
+```java
+// 创建不同类型数组：Integer, Double 和 Character
+Integer[] intArray = { 1, 2, 3 };
+String[] stringArray = { "Hello", "World" };
+printArray( intArray  );
+printArray( stringArray  );
+```
+
+ 注意: `public static < E > void printArray( E[] inputArray )` 一般被称为静态泛型方法；在 java 中泛型只是一个占位符，必须在传递类型后才能使用。类在实例化时才能真正的传递类型参数，由于静态方法的加载先于类的实例化，也就是说类中的泛型还没有传递真正的类型参数，静态的方法的加载就已经完成了，所以静态泛型方法是没有办法使用类上声明的泛型的。只能使用自己声明的 `<E>`。
+
+## 项目中哪里用到了泛型？
++ 自定义接口通用返回结果 `CommonResult<T>` 通过参数 `T` 可根据具体的返回类型动态指定结果的数据类型
++ 定义 `Excel` 处理类 `ExcelUtil<T>` 用于动态指定 `Excel` 导出的数据类型
++ 构建集合工具类（参考 `Collections` 中的 `sort`, `binarySearch` 方法）。
+
+
+
 
 
