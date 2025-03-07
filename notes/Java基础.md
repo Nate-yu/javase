@@ -1638,3 +1638,29 @@ I love yubin
 value is javaguide
 ```
 
+# 注解
+## 何谓注解
+`Annotation` （注解） 是 Java5 开始引入的新特性，可以看作是一种特殊的注释，主要用于修饰类、方法或者变量，提供某些信息供程序在编译或者运行时使用。
+
+注解本质是一个继承了`Annotation` 的特殊接口：
+
+```java
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.SOURCE)
+public @interface Override {
+
+}
+
+public interface Override extends Annotation{
+
+}
+```
+
+<font style="color:rgb(60, 60, 67);">JDK 提供了很多内置的注解（比如 </font>`<font style="color:rgb(60, 60, 67);">@Override</font>`<font style="color:rgb(60, 60, 67);">、</font>`<font style="color:rgb(60, 60, 67);">@Deprecated</font>`<font style="color:rgb(60, 60, 67);">），同时，我们还可以自定义注解。</font>
+
+## <font style="color:rgb(60, 60, 67);">注解的解析方法有哪几种？</font>
+注解只有被解析之后才会生效，常见的解析方法有两种：
+
++ **编译期直接扫描**：编译器在编译 Java 代码的时候扫描对应的注解并处理，比如某个方法使用`@Override` 注解，编译器在编译的时候就会检测当前的方法是否重写了父类对应的方法。
++ **运行期通过反射处理**：像框架中自带的注解(比如 Spring 框架的 `@Value`、`@Component`)都是通过反射来进行处理的。
+
