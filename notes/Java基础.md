@@ -1481,7 +1481,160 @@ printArray( stringArray  );
 + 定义 `Excel` 处理类 `ExcelUtil<T>` 用于动态指定 `Excel` 导出的数据类型
 + 构建集合工具类（参考 `Collections` 中的 `sort`, `binarySearch` 方法）。
 
+# 反射
+## 何为反射？
+通过反射可以获取任意一个类的所有属性和方法
+
+## 反射的应用场景
+动态代理的实现，就是依赖反射
+
+<font style="color:rgb(60, 60, 67);">比如下面是通过 JDK 实现动态代理的示例代码，其中就使用了反射类 </font>`<font style="color:rgb(60, 60, 67);">Method</font>`<font style="color:rgb(60, 60, 67);"> 来调用指定的方法。</font>
+
+```java
+public class DebugInvocationHandler implements InvocationHandler {
+    /**
+     * 代理类中的真实对象
+     */
+    private final Object target;
+
+    public DebugInvocationHandler(Object target) {
+        this.target = target;
+    }
 
 
+    public Object invoke(Object proxy, Method method, Object[] args) throws InvocationTargetException, IllegalAccessException {
+        System.out.println("before method " + method.getName());
+        Object result = method.invoke(target, args);
+        System.out.println("after method " + method.getName());
+        return result; 
+    }
+}
+```
 
+另外，像 Java 中的一大利器 **注解** 的实现也用到了反射。
+
+为什么你使用 Spring 的时候 ，一个`@Component`注解就声明了一个类为 Spring Bean 呢？为什么你通过一个 `@Value`注解就读取到配置文件中的值呢？究竟是怎么起作用的呢？
+
+这些都是因为你可以基于反射分析类，然后获取到类/属性/方法/方法的参数上的注解。你获取到注解之后，就可以做进一步的处理。
+
+## 谈谈反射机制的优缺点
+**优点**：可以让咱们的代码更加灵活、为各种框架提供开箱即用的功能提供了便利
+
+**缺点**：让我们在运行时有了分析操作类的能力，这同样也增加了安全问题。比如可以无视泛型参数的安全检查（泛型参数的安全检查发生在编译时）。另外，反射的性能也要稍差点，不过，对于框架来说实际是影响不大的。
+
+## 反射实战
+### 获取 Class 对象的四种方式
+<font style="color:rgb(60, 60, 67);">如果我们动态获取到这些信息，我们需要依靠 Class 对象。Class 类对象将一个类的方法、变量等信息告诉运行的程序。Java 提供了四种方式获取 Class 对象：</font>
+
+1. 知道具体类的情况下可以使用：
+
+```java
+Class alunbarClass = TargetObject.class;
+```
+
+<font style="color:rgb(60, 60, 67);">但是我们一般是不知道具体类的，基本都是通过遍历包下面的类来获取 Class 对象，通过此方式获取 Class 对象不会进行初始化</font>
+
+2. <font style="color:rgb(60, 60, 67);">通过 </font>`<font style="color:rgb(60, 60, 67);">Class.forName()</font>`<font style="color:rgb(60, 60, 67);">传入类的全路径获取：</font>
+
+```java
+Class alunbarClass1 = Class.forName("cn.javaguide.TargetObject");
+```
+
+3. <font style="color:rgb(60, 60, 67);">通过对象实例</font>`<font style="color:rgb(60, 60, 67);">instance.getClass()</font>`<font style="color:rgb(60, 60, 67);">获取：</font>
+
+```java
+TargetObject o = new TargetObject();
+Class alunbarClass2 = o.getClass();
+```
+
+4. <font style="color:rgb(60, 60, 67);">通过类加载器</font>`<font style="color:rgb(60, 60, 67);">xxxClassLoader.loadClass()</font>`<font style="color:rgb(60, 60, 67);">传入类路径获取：</font>
+
+```java
+ClassLoader.getSystemClassLoader().loadClass("cn.javaguide.TargetObject");
+```
+
+<font style="color:rgb(60, 60, 67);">通过类加载器获取 Class 对象不会进行初始化，意味着不进行包括初始化等一系列步骤，静态代码块和静态对象不会得到执行</font>
+
+### <font style="color:rgb(60, 60, 67);">反射的一些基本操作</font>
+1. <font style="color:rgb(60, 60, 67);">创建一个我们要使用反射操作的类 </font>`<font style="color:rgb(60, 60, 67);">TargetObject</font>`<font style="color:rgb(60, 60, 67);">。</font>
+
+```java
+package reflect;
+
+public class TargetObject {
+    private String value;
+
+    public TargetObject() {
+        value = "javaguide";
+    }
+
+    public void publicMethod(String s) {
+        System.out.println("I love " + s);
+    }
+
+    private void privateMethod() {
+        System.out.println("value is " + value);
+    }
+}
+
+```
+
+2. <font style="color:rgb(60, 60, 67);">使用反射操作这个类的方法以及属性</font>
+
+```java
+package reflect;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
+public class Main {
+    public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
+            InstantiationException, InvocationTargetException, NoSuchFieldException {
+        /**
+         * 获取 TargetObject 类的 Class 对象并且创建 TargetObject 类实例
+         */
+        Class<?> targetClass = Class.forName("reflect.TargetObject");
+        TargetObject targetObject = (TargetObject) targetClass.newInstance();
+        /**
+         * 获取 TargetObject 类中定义的所有方法
+         */
+        Method[] methods = targetClass.getDeclaredMethods();
+        for (Method method : methods) {
+            System.out.println(method.getName());
+        }
+
+        /**
+        * 获取指定方法并调用
+        */
+        Method publicMethod = targetClass.getDeclaredMethod("publicMethod", String.class);
+        publicMethod.invoke(targetObject, "yubin");
+
+        /**
+         * 获取指定参数并对参数进行修改
+         */
+        Field field = targetClass.getDeclaredField("value");
+        // 为了对类中的参数进行修改我们取消安全检查
+        field.setAccessible(true);
+        field.set(targetObject,"javaguide");
+
+        /**
+         * 调用private方法
+         */
+        Method privateMethod = targetClass.getDeclaredMethod("privateMethod");
+        privateMethod.setAccessible(true);
+        privateMethod.invoke(targetObject);
+    }
+
+}
+```
+
+输出：
+
+```plain
+privateMethod
+publicMethod
+I love yubin
+value is javaguide
+```
 
