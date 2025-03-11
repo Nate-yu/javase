@@ -1795,5 +1795,113 @@ Java 中将实参传递给方法（或函数）的方式是 **值传递**：
 + 如果参数是基本类型的话，很简单，传递的就是基本类型的字面量值的拷贝，会创建副本。
 + 如果参数是引用类型，传递的就是实参所引用的对象在堆中地址值的拷贝，同样也会创建副本。
 
+# 序列化
+## 什么是序列化和反序列化?
+如果我们需要持久化 Java 对象比如将 Java 对象保存在文件中，或者在网络传输 Java 对象，这些场景都需要用到序列化。
 
+简单来说：
+
++ **序列化**：将数据结构或对象转换成可以存储或传输的形式，通常是二进制字节流，也可以是 JSON, XML 等文本格式
++ **反序列化**：将在序列化过程中所生成的数据转换为原始数据结构或者对象的过程
+
+对于 Java 这种面向对象编程语言来说，我们序列化的都是对象（Object）也就是实例化后的类(Class)，但是在 C++这种半面向对象的语言中，struct(结构体)定义的是数据结构类型，而 class 对应的是对象类型。
+
+下面是序列化和反序列化常见应用场景：
+
++ 对象在进行网络传输（比如远程方法调用 RPC 的时候）之前需要先被序列化，接收到序列化的对象之后需要再进行反序列化；
++ 将对象存储到文件之前需要进行序列化，将对象从文件中读取出来需要进行反序列化；
++ 将对象存储到数据库（如 Redis）之前需要用到序列化，将对象从缓存数据库中读取出来需要反序列化；
++ 将对象存储到内存之前需要进行序列化，从内存中读取出来之后需要进行反序列化。
+
+<font style="color:rgb(60, 60, 67);">综上：</font>**<font style="color:rgb(60, 60, 67);">序列化的主要目的是通过网络传输对象或者说是将对象存储到文件系统、数据库、内存中。</font>**
+
+![](https://cdn.nlark.com/yuque/0/2025/png/25941432/1741696020567-66a85400-3189-4f44-a411-843d4c189992.png)
+
+**<font style="color:rgb(60, 60, 67);">序列化协议对应于 TCP/IP 4 层模型的哪一层？</font>**
+
+<font style="color:rgb(60, 60, 67);">我们知道网络通信的双方必须要采用和遵守相同的协议。TCP/IP 四层模型是下面这样的，序列化协议属于哪一层呢？</font>
+
+1. <font style="color:rgb(60, 60, 67);">应用层</font>
+2. <font style="color:rgb(60, 60, 67);">传输层</font>
+3. <font style="color:rgb(60, 60, 67);">网络层</font>
+4. <font style="color:rgb(60, 60, 67);">网络接口层</font>
+
+![](https://cdn.nlark.com/yuque/0/2025/png/25941432/1741696048583-3a43518a-378d-4b41-b074-37551e9a14b6.png)
+
+如上图所示，OSI 七层协议模型中，表示层做的事情主要就是对应用层的用户数据进行处理转换为二进制流。反过来的话，就是将二进制流转换成应用层的用户数据。这不就对应的是序列化和反序列化么？
+
+因为，OSI 七层协议模型中的应用层、表示层和会话层对应的都是 TCP/IP 四层模型中的应用层，所以序列化协议属于 TCP/IP 协议应用层的一部分。
+
+## 常见序列化协议有哪些？
+JDK 自带的序列化方式一般不会用 ，因为序列化效率低并且存在安全问题。比较常用的序列化协议有 Hessian、Kryo、Protobuf、ProtoStuff，这些都是基于二进制的序列化协议。
+
+像 JSON 和 XML 这种属于文本类序列化方式。虽然可读性比较好，但是性能较差，一般不会选择。
+
+### JDK 自带的序列化方式
+<font style="color:rgb(60, 60, 67);">JDK 自带的序列化，只需实现 </font>`<font style="color:rgb(60, 60, 67);">java.io.Serializable</font>`<font style="color:rgb(60, 60, 67);">接口即可。</font>
+
+```java
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Builder
+@ToString
+public class RpcRequest implements Serializable {
+    private static final long serialVersionUID = 1905122041950251207L;
+    private String requestId;
+    private String interfaceName;
+    private String methodName;
+    private Object[] parameters;
+    private Class<?>[] paramTypes;
+    private RpcMessageTypeEnum rpcMessageTypeEnum;
+}
+```
+
+**<font style="color:rgb(60, 60, 67);">serialVersionUID 有什么作用？</font>**
+
+<font style="color:rgb(60, 60, 67);">序列化号 </font>`<font style="color:rgb(60, 60, 67);">serialVersionUID</font>`<font style="color:rgb(60, 60, 67);"> 属于版本控制的作用。反序列化时，会检查 </font>`<font style="color:rgb(60, 60, 67);">serialVersionUID</font>`<font style="color:rgb(60, 60, 67);"> 是否和当前类的 </font>`<font style="color:rgb(60, 60, 67);">serialVersionUID</font>`<font style="color:rgb(60, 60, 67);"> 一致。如果 </font>`<font style="color:rgb(60, 60, 67);">serialVersionUID</font>`<font style="color:rgb(60, 60, 67);"> 不一致则会抛出 </font>`<font style="color:rgb(60, 60, 67);">InvalidClassException</font>`<font style="color:rgb(60, 60, 67);"> 异常。强烈推荐每个序列化类都手动指定其 </font>`<font style="color:rgb(60, 60, 67);">serialVersionUID</font>`<font style="color:rgb(60, 60, 67);">，如果不手动指定，那么编译器会动态生成默认的 </font>`<font style="color:rgb(60, 60, 67);">serialVersionUID</font>`<font style="color:rgb(60, 60, 67);">。</font>
+
+**<font style="color:rgb(60, 60, 67);">serialVersionUID 不是被 static 变量修饰了吗？为什么还会被“序列化”？</font>**
+
+`<font style="color:rgb(60, 60, 67);">static</font>`<font style="color:rgb(60, 60, 67);"> 修饰的变量是静态变量，属于类而非类的实例，本身是不会被序列化的。然而，</font>`<font style="color:rgb(60, 60, 67);">serialVersionUID</font>`<font style="color:rgb(60, 60, 67);"> 是一个特例，</font>`<font style="color:rgb(60, 60, 67);">serialVersionUID</font>`<font style="color:rgb(60, 60, 67);"> 的序列化做了特殊处理。当一个对象被序列化时，</font>`<font style="color:rgb(60, 60, 67);">serialVersionUID</font>`<font style="color:rgb(60, 60, 67);"> 会被写入到序列化的二进制流中；在反序列化时，也会解析它并做一致性判断，以此来验证序列化对象的版本一致性。如果两者不匹配，反序列化过程将抛出 </font>`<font style="color:rgb(60, 60, 67);">InvalidClassException</font>`<font style="color:rgb(60, 60, 67);">，因为这通常意味着序列化的类的定义已经发生了更改，可能不再兼容。</font>
+
+<font style="color:rgb(60, 60, 67);">也就是说，</font>`<font style="color:rgb(60, 60, 67);">serialVersionUID</font>`<font style="color:rgb(60, 60, 67);"> 只是用来被 JVM 识别，实际并没有被序列化。</font>
+
+**如果有些字段不想进行序列化怎么办？**
+
+<font style="color:rgb(60, 60, 67);">对于不想进行序列化的变量，可以使用 </font>`<font style="color:rgb(60, 60, 67);">transient</font>`<font style="color:rgb(60, 60, 67);"> 关键字修饰。</font>
+
+`<font style="color:rgb(60, 60, 67);">transient</font>`<font style="color:rgb(60, 60, 67);"> 关键字的作用是：阻止实例中那些用此关键字修饰的的变量序列化；当对象被反序列化时，被 </font>`<font style="color:rgb(60, 60, 67);">transient</font>`<font style="color:rgb(60, 60, 67);"> 修饰的变量值不会被持久化和恢复。</font>
+
+<font style="color:rgb(60, 60, 67);">关于 </font>`<font style="color:rgb(60, 60, 67);">transient</font>`<font style="color:rgb(60, 60, 67);"> 还有几点注意：</font>
+
++ `<font style="color:rgb(60, 60, 67);">transient</font>`<font style="color:rgb(60, 60, 67);"> 只能修饰变量，不能修饰类和方法。</font>
++ `<font style="color:rgb(60, 60, 67);">transient</font>`<font style="color:rgb(60, 60, 67);"> 修饰的变量，在反序列化后变量值将会被置成类型的默认值。例如，如果是修饰 </font>`<font style="color:rgb(60, 60, 67);">int</font>`<font style="color:rgb(60, 60, 67);"> 类型，那么反序列后结果就是 </font>`<font style="color:rgb(60, 60, 67);">0</font>`<font style="color:rgb(60, 60, 67);">。</font>
++ `<font style="color:rgb(60, 60, 67);">static</font>`<font style="color:rgb(60, 60, 67);"> 变量因为不属于任何对象(Object)，所以无论有没有 </font>`<font style="color:rgb(60, 60, 67);">transient</font>`<font style="color:rgb(60, 60, 67);"> 关键字修饰，均不会被序列化。</font>
+
+**为什么不推荐使用 JDK 自带的序列化？**
+
+<font style="color:rgb(60, 60, 67);">我们很少或者说几乎不会直接使用 JDK 自带的序列化方式，主要原因有下面这些原因：</font>
+
++ **不支持跨语言调用**<font style="color:rgb(60, 60, 67);"> : 如果调用的是其他语言开发的服务的时候就不支持了。</font>
++ **性能差**<font style="color:rgb(60, 60, 67);">：相比于其他序列化框架性能更低，主要原因是序列化之后的字节数组体积较大，导致传输成本加大。</font>
++ **存在安全问题**<font style="color:rgb(60, 60, 67);">：序列化和反序列化本身并不存在问题。但当输入的反序列化的数据可被用户控制，那么攻击者即可通过构造恶意输入，让反序列化产生非预期的对象，在此过程中执行构造的任意代码。</font>
+
+### Kryo
+Kryo 是一个高性能的序列化/反序列化工具，由于其变长存储特性并使用了字节码生成机制，拥有较高的运行速度和较小的字节码体积。
+
+另外，Kryo 已经是一种非常成熟的序列化实现了，已经在 Twitter、Groupon、Yahoo 以及多个著名开源项目（如 Hive、Storm）中广泛的使用。
+
+### Protobuf
+ Protobuf 出自于 Google，性能还比较优秀，也支持多种语言，同时还是跨平台的。就是在使用中过于繁琐，因为你需要自己定义 IDL 文件和生成对应的序列化代码。这样虽然不灵活，但是，另一方面导致 protobuf 没有序列化漏洞的风险。
+
+### ProtoStuff
+由于 Protobuf 的易用性较差，它的哥哥 Protostuff 诞生了。
+
+protostuff 基于 Google protobuf，但是提供了更多的功能和更简易的用法。虽然更加易用，但是不代表 ProtoStuff 性能更差。
+
+### Hessian
+<font style="color:rgb(60, 60, 67);">Hessian 是一个轻量级的，自定义描述的二进制 RPC 协议。Hessian 是一个比较老的序列化实现了，并且同样也是跨语言的。</font>
+
+<font style="color:rgb(60, 60, 67);"></font>
 
