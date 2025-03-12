@@ -1,6 +1,6 @@
 package oop;
 
-public class Address implements Cloneable {
+public class Address implements java.lang.Cloneable {
     private String name;
     
     // 构造方法
