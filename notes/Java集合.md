@@ -455,5 +455,322 @@ Java 中常用的阻塞队列实现类有以下几种：
 + 锁是否分离： `ArrayBlockingQueue`中的锁是没有分离的，即生产和消费用的是同一个锁；`LinkedBlockingQueue`中的锁是分离的，即生产用的是`putLock`，消费是`takeLock`，这样可以防止生产者和消费者线程之间的锁争夺。
 + 内存占用：`ArrayBlockingQueue` 需要提前分配数组内存，而 `LinkedBlockingQueue` 则是动态分配链表节点内存。这意味着，`ArrayBlockingQueue` 在创建时就会占用一定的内存空间，且往往申请的内存比实际所用的内存更大，而`LinkedBlockingQueue` 则是根据元素的增加而逐渐占用内存空间。
 
+# Map
+## HashMap 和 Hashtable 的区别
++ 线程是否安全：`HashMap`非线程安全，`Hashtable`线程安全，因为其内部的方法都经过`synchronized`修饰。
++ 效率：HashMap效率高
++ 对 Null key 和 Null value 的支持：`HashMap` 可以存储 null 的 key 和 value，但 null 作为键只能有一个，null 作为值可以有多个；Hashtable 不允许有 null 键和 null 值，否则会抛出 `NullPointerException`
++ 初始容量大小和每次扩容大小的不同：
+    - 创建时如果不指定容量初始值，`Hashtable` 默认的初始大小为 11，之后每次扩充，容量变为原来的 2n+1。`HashMap` 默认的初始化大小为 16。之后每次扩充，容量变为原来的 2 倍
+    - 创建时如果给定了容量初始值，那么 `Hashtable` 会直接使用你给定的大小，而 `HashMap` 会将其扩充为 2 的幂次方大小（`HashMap` 中的`tableSizeFor()`方法保证，下面给出了源代码）。也就是说 `HashMap` 总是使用 2 的幂作为哈希表的大小
++ 底层数据结构： JDK1.8 以后的 `HashMap` 在解决哈希冲突时有了较大的变化，当链表长度大于阈值（默认为 8）时，将链表转化为红黑树（将链表转换成红黑树前会判断，如果当前数组的长度小于 64，那么会选择先进行数组扩容，而不是转换为红黑树），以减少搜索时间。`Hashtable` 没有这样的机制
++ 哈希函数的实现：`HashMap` 对哈希值进行了高位和低位的混合扰动处理以减少冲突，而 `Hashtable` 直接使用键的 `hashCode()` 值
+
+`HashMap` 中带有初始容量的构造函数：
+
+```java
+public HashMap(int initialCapacity, float loadFactor) {
+    if (initialCapacity < 0)
+        throw new IllegalArgumentException("Illegal initial capacity: " +
+                                           initialCapacity);
+    if (initialCapacity > MAXIMUM_CAPACITY)
+        initialCapacity = MAXIMUM_CAPACITY;
+    if (loadFactor <= 0 || Float.isNaN(loadFactor))
+        throw new IllegalArgumentException("Illegal load factor: " +
+                                           loadFactor);
+    this.loadFactor = loadFactor;
+    this.threshold = tableSizeFor(initialCapacity);
+}
+ public HashMap(int initialCapacity) {
+    this(initialCapacity, DEFAULT_LOAD_FACTOR);
+}
+```
+
+下面这个方法保证了 `HashMap` 总是使用 2 的幂作为哈希表的大小。
+
+```java
+/**
+ * Returns a power of two size for the given target capacity.
+ */
+static final int tableSizeFor(int cap) {
+    int n = cap - 1;
+    n |= n >>> 1;
+    n |= n >>> 2;
+    n |= n >>> 4;
+    n |= n >>> 8;
+    n |= n >>> 16;
+    return (n < 0) ? 1 : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
+}
+```
+
+## HashMap 和 HashSet 区别
+如果你看过 `HashSet` 源码的话就应该知道：`HashSet` 底层就是基于 `HashMap` 实现的。（`HashSet` 的源码非常非常少，因为除了 `clone()`、`writeObject()`、`readObject()`是 `HashSet` 自己不得不实现之外，其他方法都是直接调用 `HashMap` 中的方法。
+
+| `HashMap` | `HashSet` |
+| :---: | :---: |
+| 实现了 `Map`<br/> 接口 | 实现 `Set`<br/> 接口 |
+| 存储键值对 | 仅存储对象 |
+| 调用 `put()`<br/>向 map 中添加元素 | 调用 `add()`<br/>方法向 `Set`<br/> 中添加元素 |
+| `HashMap`<br/> 使用键（Key）计算 `hashcode` | `HashSet`<br/> 使用成员对象来计算 `hashcode`<br/> 值，对于两个对象来说 `hashcode`<br/> 可能相同，所以`equals()`<br/>方法用来判断对象的相等性 |
+
+
+## HashMap 和 TreeMap 区别
+`TreeMap` 和`HashMap` 都继承自`AbstractMap` ，但是需要注意的是`TreeMap`它还实现了`NavigableMap`接口和`SortedMap` 接口。
+
+![](https://cdn.nlark.com/yuque/0/2025/png/25941432/1741951000029-23ebd680-0303-4931-850d-3d7abdafdee7.png)
+
+实现 `NavigableMap` 接口让 `TreeMap` 有了对集合内元素的搜索的能力。
+
+`NavigableMap` 接口提供了丰富的方法来探索和操作键值对:
+
+1. **定向搜索**: `ceilingEntry()`, `floorEntry()`, `higherEntry()`和 `lowerEntry()` 等方法可以用于定位大于等于、小于等于、严格大于、严格小于给定键的最接近的键值对。
+2. **子集操作**: `subMap()`, `headMap()`和 `tailMap()` 方法可以高效地创建原集合的子集视图，而无需复制整个集合。
+3. **逆序视图**:`descendingMap()` 方法返回一个逆序的 `NavigableMap` 视图，使得可以反向迭代整个 `TreeMap`。
+4. **边界操作**: `firstEntry()`, `lastEntry()`, `pollFirstEntry()`和 `pollLastEntry()` 等方法可以方便地访问和移除元素。
+
+这些方法都是基于红黑树数据结构的属性实现的，红黑树保持平衡状态，从而保证了搜索操作的时间复杂度为 O(log n)，这让 `TreeMap` 成为了处理有序集合搜索问题的强大工具。
+
+实现`SortedMap`接口让 `TreeMap` 有了对集合中的元素根据键排序的能力。默认是按 key 的升序排序，不过我们也可以指定排序的比较器。示例代码如下：
+
+```java
+package collections.map;
+
+import java.util.Comparator;
+import java.util.TreeMap;
+public class Person {
+    private Integer age;
+
+    public Person(Integer age) {
+        this.age = age;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+    
+    public static void main(String[] args) {
+        TreeMap<Person, String> treeMap = new TreeMap<>(new Comparator<Person>() {
+            @Override
+            public int compare(Person person1, Person person2) {
+                int num = person1.getAge() - person2.getAge();
+                return Integer.compare(num, 0);
+            }
+        });
+        treeMap.put(new Person(3), "person1");
+        treeMap.put(new Person(18), "person2");
+        treeMap.put(new Person(35), "person3");
+        treeMap.put(new Person(16), "person4");
+        treeMap.entrySet().stream().forEach(personStringEntry -> {
+            System.out.println(personStringEntry.getValue());
+        });
+    }
+}
+
+```
+
+输出：
+
+```java
+person1
+person4
+person2
+person3
+```
+
+可以看出，TreeMap 中的元素已经是按照 Person 的 age 字段的升序来排列了。
+
+上面，我们是通过传入匿名内部类的方式实现的，你可以将代码替换成 Lambda 表达式实现的方式：
+
+```java
+TreeMap<Person, String> treeMap = new TreeMap<>((person1, person2) -> {
+  int num = person1.getAge() - person2.getAge();
+  return Integer.compare(num, 0);
+});
+```
+
+综上，相比于HashMap来说， TreeMap 主要多了对集合中的元素根据键排序的能力以及对集合内元素的搜索的能力。
+
+## HashSet 如何检查重复?
+在 JDK1.8 中，`HashSet`的`add()`方法只是简单的调用了`HashMap`的`put()`方法，并且判断了一下返回值以确保是否有重复元素。直接看一下HashSet中的源码：
+
+```java
+// Returns: true if this set did not already contain the specified element
+// 返回值：当 set 中没有包含 add 的元素时返回真
+public boolean add(E e) {
+    return map.put(e, PRESENT)==null;
+}
+```
+
+而在`HashMap`的`putVal()`方法中也能看到如下说明：
+
+```java
+// Returns : previous value, or null if none
+// 返回值：如果插入位置没有元素返回null，否则返回上一个元素
+final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
+                   boolean evict) {
+...
+}
+```
+
+也就是说，在 JDK1.8 中，实际上无论`HashSet`中是否已经存在了某元素，`HashSet`都会直接插入，只是会在`add()`方法的返回值处告诉我们插入前是否存在相同元素。
+
+## HashMap底层实现
+### JDK1.8之前
+JDK1.8 之前 `HashMap` 底层是 **数组和链表** 结合在一起使用也就是 **链表散列**。HashMap 通过 key 的 `hashcode` 经过扰动函数处理过后得到 hash 值，然后通过 `(n - 1) & hash` 判断当前元素存放的位置（这里的 n 指的是数组的长度），如果当前位置存在元素的话，就判断该元素与要存入的元素的 hash 值以及 key 是否相同，如果相同的话，直接覆盖，不相同就通过拉链法解决冲突。
+
+`HashMap` 中的扰动函数（`hash` 方法）是用来优化哈希值的分布。通过对原始的 `hashCode()` 进行额外处理，扰动函数可以减小由于糟糕的 `hashCode()` 实现导致的碰撞，从而提高数据的分布均匀性。
+
+**JDK 1.8 HashMap 的 hash 方法源码:**
+
+JDK 1.8 的 hash 方法 相比于 JDK 1.7 hash 方法更加简化，但是原理不变。
+
+```java
+static final int hash(Object key) {
+  int h;
+  // key.hashCode()：返回散列值也就是hashcode
+  // ^：按位异或
+  // >>>:无符号右移，忽略符号位，空位都以0补齐
+  return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
+}
+```
+
+对比一下 JDK1.7 的 HashMap 的 hash 方法源码.
+
+```java
+static int hash(int h) {
+    // This function ensures that hashCodes that differ only by
+    // constant multiples at each bit position have a bounded
+    // number of collisions (approximately 8 at default load factor).
+
+    h ^= (h >>> 20) ^ (h >>> 12);
+    return h ^ (h >>> 7) ^ (h >>> 4);
+}
+```
+
+相比于 JDK1.8 的 hash 方法 ，JDK 1.7 的 hash 方法的性能会稍差一点点，因为毕竟扰动了 4 次。
+
+所谓 **“拉链法”** 就是：将链表和数组相结合。也就是说创建一个链表数组，数组中每一格就是一个链表。若遇到哈希冲突，则将冲突的值加到链表中即可。
+
+![](https://cdn.nlark.com/yuque/0/2025/png/25941432/1741952121754-fbc04169-2d62-4270-85c7-14f94b78386a.png)
+
+### JDK1.8之后
+相比于之前的版本， JDK1.8 之后在解决哈希冲突时有了较大的变化，当链表长度大于阈值（默认为 8）（将链表转换成红黑树前会判断，如果当前数组的长度小于 64，那么会选择先进行数组扩容，而不是转换为红黑树）时，将链表转化为红黑树，以减少搜索时间。
+
+![](https://cdn.nlark.com/yuque/0/2025/png/25941432/1741952149803-b9805d27-25dd-44cb-8afe-db1da10025f4.png)
+
+> TreeMap、TreeSet 以及 JDK1.8 之后的 HashMap 底层都用到了红黑树。红黑树就是为了解决二叉查找树的缺陷，因为二叉查找树在某些情况下会退化成一个线性结构。
+>
+
+我们来结合源码分析一下 `HashMap` 链表到红黑树的转换。
+
+1. `putVal` 方法中执行链表转红黑树的判断逻辑。
+
+链表的长度大于 8 的时候，就执行 `treeifyBin` （转换红黑树）的逻辑。
+
+```java
+// 遍历链表
+for (int binCount = 0; ; ++binCount) {
+    // 遍历到链表最后一个节点
+    if ((e = p.next) == null) {
+        p.next = newNode(hash, key, value, null);
+        // 如果链表元素个数大于TREEIFY_THRESHOLD（8）
+        if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
+            // 红黑树转换（并不会直接转换成红黑树）
+            treeifyBin(tab, hash);
+        break;
+    }
+    if (e.hash == hash && ((k = e.key) == key || (key != null && key.equals(k))))
+        break;
+    p = e;
+}
+```
+
+2. `treeifyBin` 方法中判断是否真的转换为红黑树
+
+```java
+final void treeifyBin(Node<K,V>[] tab, int hash) {
+    int n, index; Node<K,V> e;
+    // 判断当前数组的长度是否小于 64
+    if (tab == null || (n = tab.length) < MIN_TREEIFY_CAPACITY)
+        // 如果当前数组的长度小于 64，那么会选择先进行数组扩容
+        resize();
+    else if ((e = tab[index = (n - 1) & hash]) != null) {
+        // 否则才将列表转换为红黑树
+
+        TreeNode<K,V> hd = null, tl = null;
+        do {
+            TreeNode<K,V> p = replacementTreeNode(e, null);
+            if (tl == null)
+                hd = p;
+            else {
+                p.prev = tl;
+                tl.next = p;
+            }
+            tl = p;
+        } while ((e = e.next) != null);
+        if ((tab[index] = hd) != null)
+            hd.treeify(tab);
+    }
+}
+```
+
+将链表转换成红黑树前会判断，如果当前数组的长度小于 64，那么会选择先进行数组扩容，而不是转换为红黑树。
+
+## HashMap 的长度为什么是 2 的幂次方
+为了让 `HashMap` 存取高效并减少碰撞，我们需要确保数据尽量均匀分布。哈希值在 Java 中通常使用 `int` 表示，其范围是 `-2147483648 ~ 2147483647`前后加起来大概 40 亿的映射空间，只要哈希函数映射得比较均匀松散，一般应用是很难出现碰撞的。但是，问题是一个 40 亿长度的数组，内存是放不下的。所以，这个散列值是不能直接拿来用的。用之前还要先做对数组的长度取模运算，得到的余数才能用来要存放的位置也就是对应的数组下标。
+
+**这个算法应该如何设计呢？**
+
+我们首先可能会想到采用 % 取余的操作来实现。但是，重点来了：“**取余(%)操作中如果除数是 2 的幂次则等价于与其除数减一的与(&)操作**（也就是说 `hash%length==hash&(length-1)` 的前提是 length 是 2 的 n 次方）。” 并且，**采用二进制位操作 & 相对于 % 能够提高运算效率**。
+
+除了上面所说的位运算比取余效率高之外，我觉得更重要的一个原因是：**长度是 2 的幂次方，可以让 **`**HashMap**`** 在扩容的时候更均匀**。例如:
+
++ length = 8 时，length - 1 = 7 的二进制位`0111`
++ length = 16 时，length - 1 = 15 的二进制位`1111`
+
+这时候原本存在 `HashMap` 中的元素计算新的数组位置时 `hash&(length-1)`，取决 hash 的第四个二进制位（从右数），会出现两种情况：
+
+1. 第四个二进制位为 0，数组位置不变，也就是说当前元素在新数组和旧数组的位置相同。
+2. 第四个二进制位为 1，数组位置在新数组扩容之后的那一部分。
+
+这里列举一个例子：
+
+```plain
+假设有一个元素的哈希值为 10101100
+
+旧数组元素位置计算：
+hash        = 10101100
+length - 1  = 00000111
+& -----------------
+index       = 00000100  (4)
+
+新数组元素位置计算：
+hash        = 10101100
+length - 1  = 00001111
+& -----------------
+index       = 00001100  (12)
+
+看第四位（从右数）：
+1.高位为 0：位置不变。
+2.高位为 1：移动到新位置（原索引位置+原容量）。
+```
+
+⚠️注意：这里列举的场景看的是第四个二进制位，更准确点来说看的是高位（从右数），例如 `length = 32` 时，`length - 1 = 31`，二进制为 `11111`，这里看的就是第五个二进制位。
+
+也就是说扩容之后，在旧数组元素 hash 值比较均匀（至于 hash 值均不均匀，取决于前面讲的对象的 `hashcode()` 方法和扰动函数）的情况下，新数组元素也会被分配的比较均匀，最好的情况是会有一半在新数组的前半部分，一半在新数组后半部分。
+
+这样也使得扩容机制变得简单和高效，扩容后只需检查哈希值高位的变化来决定元素的新位置，要么位置不变（高位为 0），要么就是移动到新位置（高位为 1，原索引位置+原容量）。
+
+最后，简单总结一下 `HashMap` 的长度是 2 的幂次方的原因：
+
+1. **位运算效率更高**：位运算(&)比取余运算(%)更高效。当长度为 2 的幂次方时，`hash % length` 等价于 `hash & (length - 1)`。
+2. **可以更好地保证哈希值的均匀分布**：扩容之后，在旧数组元素 hash 值比较均匀的情况下，新数组元素也会被分配的比较均匀，最好的情况是会有一半在新数组的前半部分，一半在新数组后半部分。
+3. **扩容机制变得简单和高效**：扩容后只需检查哈希值高位的变化来决定元素的新位置，要么位置不变（高位为 0），要么就是移动到新位置（高位为 1，原索引位置+原容量）。
+
+## HashMap 多线程操作导致死循环问题
+JDK1.7 及之前版本的 `HashMap` 在多线程环境下扩容操作可能存在死循环问题，这是由于当一个桶位中有多个元素需要进行扩容时，多个线程同时对链表进行操作，头插法可能会导致链表中的节点指向错误的位置，从而形成一个环形链表，进而使得查询元素的操作陷入死循环无法结束。
+
+为了解决这个问题，JDK1.8 版本的 HashMap 采用了尾插法而不是头插法来避免链表倒置，使得插入的节点永远都是放在链表的末尾，避免了链表中的环形结构。但是还是不建议在多线程下使用 `HashMap`，因为多线程下使用 `HashMap` 还是会存在数据覆盖的问题。并发环境下，推荐使用 `ConcurrentHashMap` 。
+
 
 
